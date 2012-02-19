@@ -21,7 +21,8 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// version: 0.1.2
+// version: 0.1.2 (Extended by talfco - Felix Kuestahler)
+// Available on GitHub: git@github.com:talfco/jeip.git
  (function($) {
     $.fn.eip = function(save_url, options) {
         // Defaults
@@ -61,10 +62,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             saving: '<span id="saving-#{id}" class="#{saving_class}" style="display: none;">#{saving_text}</span>',
 
             start_form: '<span id="editor-#{id}" class="#{editor_class}" style="display: none;">',
-            form_buttons: '<span><input type="button" id="save-#{id}" class="#{savebutton_class}" value="#{savebutton_text}" /> OR <input type="button" id="cancel-#{id}" class="#{cancelbutton_class}" value="#{cancelbutton_text}" /></span>',
+            form_buttons: '<span><button id="save-#{id}" class="#{savebutton_class}">#{savebutton_text} </button> <button id="cancel-#{id}" class="#{cancelbutton_class}">#{cancelbutton_text}</button></span>',
             stop_form: '</span>',
 
-            text_form: '<input type="text" id="edit-#{id}" class="#{editfield_class}" value="#{value}" /> <br />',
+            text_form: '<input type="text" id="edit-#{id}" class="#{editfield_class}" value="#{value}" /> ',
             textarea_form: '<textarea cols="#{cols}" rows="#{rows}" id="edit-#{id}" class="#{editfield_class}">#{value}</textarea> <br />',
             start_select_form: '<select id="edit-#{id}" class="#{editfield_clas}">',
             select_option_form: '<option id="edit-option-#{id}-#{option_value}" value="#{option_value}" #{selected}>#{option_text}</option>',
@@ -254,10 +255,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             $(self).fadeIn("fast");
         };
 
+        // This is the 'Save' function which gets called
         var _saveEdit = function(self, orig_option_value) {
             var orig_value = $(self).html();
             var new_value = $("#edit-" + self.id).attr("value");
 
+            // In case the value didn't change then return
             if (orig_value == new_value) {
                 $("#editor-" + self.id).fadeOut("fast");
                 $("#editor-" + self.id).remove();
@@ -278,11 +281,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 saving_class: opt.saving_class,
                 saving_text: opt.saving_text
             }));
+
             $("#editor-" + self.id).fadeOut("fast",
             function() {
                 $("#saving-" + self.id).fadeIn("fast");
             });
-
+            // Prepare the ajax data
             var ajax_data = {
                 url: location.href,
                 id: self.id,
@@ -291,13 +295,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 new_value: $("#edit-" + self.id).attr("value"),
                 data: opt.data
             }
-
             if (opt.form_type == 'select') {
                 ajax_data.orig_option_value = orig_option_value;
                 ajax_data.orig_option_text = orig_value;
                 ajax_data.new_option_text = $("#edit-option-" + self.id + "-" + new_value).html();
             }
-
             $.ajax({
                 url: opt.save_url,
                 type: "POST",
@@ -307,11 +309,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     $("#editor-" + self.id).fadeOut("fast");
                     $("#editor-" + self.id).remove();
 
+                    // Now insert the result
                     if (data.is_error == true) {
                         opt.on_error(data.error_text);
                     }
                     else {
-                        $(self).html(data.html);
+                        $(self).html(data);
                     }
 
                     $("#saving-" + self.id).fadeOut("fast");
@@ -330,8 +333,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     }
 
                     $(self).removeClass(opt.mouseover_class);
-                }
+
+                },
                 // success
+                error: function(jqXHR, textStatus, errorThrown) {
+                    throw (textStatus + errorThrown + jqXHR.responseText);
+                }
             });
             // ajax
         };
