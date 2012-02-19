@@ -27,22 +27,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	$.fn.eip = function( save_url, options ) {
 		// Defaults
 		var opt = {
-			save_url			: save_url,
+			save_url		: save_url,
 
 			save_on_enter		: true,
 			cancel_on_esc		: true,
-			focus_edit			: true,
-			select_text			: false,
-			edit_event			: "click",
+			focus_edit		: true,
+			select_text		: false,
+			edit_event		: "click",
 			select_options		: false,
-			data				: false,
+			data			: false,
 
-			form_type			: "text", // text, textarea, select
-			size				: false, // calculate at run time
-			max_size			: 60,
-			rows				: false, // calculate at run time
-			max_rows			: 10,
-			cols				: 60,
+			form_type		: "text", // text, textarea, select
+			size			: false, // calculate at run time
+			max_size		: 60,
+			rows			: false, // calculate at run time
+			max_rows		: 10,
+			cols			: 60,
 
 			savebutton_text		: "SAVE",
 			savebutton_class	: "jeip-savebutton",
@@ -53,28 +53,28 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			editor_class		: "jeip-editor",
 			editfield_class		: "jeip-editfield",
 
-			saving_text			: "Saving ...",
+			saving_text		: "Saving ...",
 			saving_class		: "jeip-saving",
 
-			saving				: '<span id="saving-#{id}" class="#{saving_class}" style="display: none;">#{saving_text}</span>',
+			saving			: '<span id="saving-#{id}" class="#{saving_class}" style="display: none;">#{saving_text}</span>',
 
-			start_form			: '<span id="editor-#{id}" class="#{editor_class}" style="display: none;">',
+			start_form		: '<span id="editor-#{id}" class="#{editor_class}" style="display: none;">',
 			form_buttons		: '<span><input type="button" id="save-#{id}" class="#{savebutton_class}" value="#{savebutton_text}" /> OR <input type="button" id="cancel-#{id}" class="#{cancelbutton_class}" value="#{cancelbutton_text}" /></span>',
-			stop_form			: '</span>',
+			stop_form		: '</span>',
 
-			text_form			: '<input type="text" id="edit-#{id}" class="#{editfield_class}" value="#{value}" /> <br />',
+			text_form		: '<input type="text" id="edit-#{id}" class="#{editfield_class}" value="#{value}" /> <br />',
 			textarea_form		: '<textarea cols="#{cols}" rows="#{rows}" id="edit-#{id}" class="#{editfield_class}">#{value}</textarea> <br />',
 			start_select_form	: '<select id="edit-#{id}" class="#{editfield_clas}">',
 			select_option_form	: '<option id="edit-option-#{id}-#{option_value}" value="#{option_value}" #{selected}>#{option_text}</option>',
 			stop_select_form	: '</select>',
 
-			after_save			: function( self ) {
+			after_save		: function( self ) {
 				for( var i = 0; i < 2; i++ ) {
 					$( self ).fadeOut( "fast" );
 					$( self ).fadeIn( "fast" );
 				}
 			},
-			on_error			: function( msg ) {
+			on_error		: function( msg ) {
 				alert( "Error: " + msg );
 			}
 		}; // defaults
