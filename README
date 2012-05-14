@@ -2,3 +2,8 @@ This is a fork of Joseph Scott's Jquery Edit in Place (JEIP) javascript library 
 The original library can be found under:
 http://josephscott.org/code/javascript/jquery-edit-in-place/ 
 All the credits for this nice library goes to him.
+
+Dependecies to
+1. datejs
+2. log4javascript.js
+3. bootstrap-datepick

@@ -22,12 +22,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 // version: 0.1.2 (Extended by talfco - Felix Kuestahler)
+// Added the possibility to have a backbone model for storing
 // Available on GitHub: git@github.com:talfco/jeip.git
+
  (function($) {
-    $.fn.eip = function(save_url, options) {
+    $.fn.eip = function(save_url, bb_model, options) {
         // Defaults
         var opt = {
             save_url: save_url,
+            bb_model: bb_model,
 
             save_on_enter: true,
             cancel_on_esc: true,
@@ -67,7 +70,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
             text_form: '<input type="text" id="edit-#{id}" class="#{editfield_class}" value="#{value}" /> ',
             textarea_form: '<textarea cols="#{cols}" rows="#{rows}" id="edit-#{id}" class="#{editfield_class}">#{value}</textarea> <br />',
-            start_select_form: '<select id="edit-#{id}" class="#{editfield_clas}">',
+            start_select_form: '<select id="edit-#{id}" class="#{editfield_class}">',
+            datepicker_form: '<input type="text" class="#{editfield_class}" value="#{value}" data-date-format="'+ window.dateformat +'" id="edit-#{id}">',
             select_option_form: '<option id="edit-option-#{id}-#{option_value}" value="#{option_value}" #{selected}>#{option_text}</option>',
             stop_select_form: '</select>',
 
@@ -81,10 +85,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 alert("Error: " + msg);
             }
         };
+
+		var log = log4javascript.getDefaultLogger()
+
         // defaults
         if (options) {
             $.extend(opt, options);
         }
+
 
         this.each(function() {
             var self = this;
@@ -94,18 +102,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 $(this).toggleClass(opt.mouseover_class);
             });
 
+            // Bind to the click the editMode function
             $(this).bind(opt.edit_event,
             function(e) {
                 _editMode(this);
             });
         });
         // this.each
-        // Private functions
+        // This is the edit function
         var _editMode = function(self) {
-            $(self).unbind(opt.edit_event);
+          $(self).unbind(opt.edit_event);
 
-            $(self).removeClass(opt.mouseover_class);
-            $(self).fadeOut("fast",
+          $(self).removeClass(opt.mouseover_class);
+          // At the end of the fadout callback function(e)
+          $(self).fadeOut("fast",
             function(e) {
                 var id = self.id;
                 var value = $(self).html();
@@ -116,11 +126,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
                 var orig_option_value = false;
 
+                // Start form fragment
                 var form = _template(opt.start_form, {
                     id: self.id,
                     editor_class: opt.editor_class
                 });
 
+                // Depending on the form_type
                 if (opt.form_type == 'text') {
                     form += _template(opt.text_form, {
                         id: self.id,
@@ -183,7 +195,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
                     form += _template(opt.stop_select_form, {});
                 }
-                // select form
+                else if (opt.form_type == 'datepicker') {
+                   form += _template(opt.datepicker_form, {
+                        id: self.id,
+                        editfield_class: opt.editfield_class,
+                        value: value
+                   });
+                   
+                }
+                 
+                // Stop form fragment
                 form += _template(opt.form_buttons, {
                     id: self.id,
                     savebutton_class: opt.savebutton_class,
@@ -192,10 +213,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     cancelbutton_text: opt.cancelbutton_text
                 });
 
+
                 form += _template(opt.stop_form, {});
 
                 $(self).after(form);
                 $("#editor-" + self.id).fadeIn("fast");
+
+                if (opt.form_type == 'datepicker') {
+	               $("#edit-" + self.id).datepicker();
+				}
 
                 if (opt.focus_edit) {
                     $("#edit-" + self.id).focus();
@@ -206,9 +232,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 }
 
                 $("#cancel-" + self.id).bind("click",
-                function(e) {
+                  function(e) {
                     _cancelEdit(self);
-                });
+                  });
 
                 $("#edit-" + self.id).keydown(function(e) {
                     // cancel
@@ -259,6 +285,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         var _saveEdit = function(self, orig_option_value) {
             var orig_value = $(self).html();
             var new_value = $("#edit-" + self.id).attr("value");
+            var new_value_1 = new_value;
 
             // In case the value didn't change then return
             if (orig_value == new_value) {
@@ -285,14 +312,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             $("#editor-" + self.id).fadeOut("fast",
             function() {
                 $("#saving-" + self.id).fadeIn("fast");
-            });
+         });
             // Prepare the ajax data
+            
+            if (opt.form_type == 'datepicker') {
+              var dt = new Date.parseExact(new_value, window.dateformat1)	  
+		      new_value = dt.toISOString() 
+		      log.debug("jeip: Date new_value:"+new_value_1)
+		      log.debug("jeip: Date new_value iso:"+new_value)
+		    }
+
             var ajax_data = {
                 url: location.href,
                 id: self.id,
                 form_type: opt.form_type,
                 orig_value: orig_value,
-                new_value: $("#edit-" + self.id).attr("value"),
+                new_value: new_value,
                 data: opt.data
             }
             if (opt.form_type == 'select') {
@@ -300,50 +335,96 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 ajax_data.orig_option_text = orig_value;
                 ajax_data.new_option_text = $("#edit-option-" + self.id + "-" + new_value).html();
             }
-            $.ajax({
-                url: opt.save_url,
-                type: "POST",
-                dataType: "json",
-                data: ajax_data,
-                success: function(data) {
-                    $("#editor-" + self.id).fadeOut("fast");
-                    $("#editor-" + self.id).remove();
+            // Saving via a URL
+            if (opt.save_url != null) {
+                $.ajax({
+                    url: opt.save_url,
+                    type: "POST",
+                    dataType: "json",
+                    data: ajax_data,
+                    success: function(data) {
+                        $("#editor-" + self.id).fadeOut("fast");
+                        $("#editor-" + self.id).remove();
 
-                    // Now insert the result
-                    if (data.is_error == true) {
-                        opt.on_error(data.error_text);
+                        // Now insert the result
+                        if (data.is_error == true) {
+                            opt.on_error(data.error_text);
+                        }
+                        else {
+                            $(self).html(data);
+                        }
+
+                        $("#saving-" + self.id).fadeOut("fast");
+                        $("#saving-" + self.id).remove();
+
+                        $(self).bind(opt.edit_event,
+                        function(e) {
+                            _editMode(self);
+                        });
+
+                        $(self).addClass(opt.mouseover_class);
+                        $(self).fadeIn("fast");
+
+                        if (opt.after_save != false) {
+                            opt.after_save(self);
+                       }
+
+                        $(self).removeClass(opt.mouseover_class);
+
+                    },
+                    // success
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        throw (textStatus + errorThrown + jqXHR.responseText);
                     }
-                    else {
-                        $(self).html(data);
-                    }
+                });
+            // Saving by using a backbone model
+            } else {
+                ins = {}
+                ins[self.id] = new_value;
+                opt.bb_model.set( ins );
+                opt.bb_model.save( ins , 
+                    { 
+                        error  : function (model, error) {
+						  /*
+							TODO Extend the error handling
+						  */
+                             throw (error)
+                         },
+                        success : function (model, resp ) {
+						  $("#editor-" + self.id).fadeOut("fast");
+                          $("#editor-" + self.id).remove();
 
-                    $("#saving-" + self.id).fadeOut("fast");
-                    $("#saving-" + self.id).remove();
+                          /*
+                          	TODO Check for what the is_error was uses
+                          */
+						  // Now insert the result
+                          //if (data.is_error == true) {
+                          //    opt.on_error(data.error_text);
+                          //}
+                          //else {
+						  if (opt.form_type == 'datepicker') 
+						    $(self).html(new_value_1);
+						  else	
+                          	$(self).html(new_value);
+                          //}
 
-                    $(self).bind(opt.edit_event,
-                    function(e) {
-                        _editMode(self);
+                          $("#saving-" + self.id).fadeOut("fast");
+                          $("#saving-" + self.id).remove();
+
+                          $(self).bind(opt.edit_event, function(e) { _editMode(self);});
+
+                          $(self).addClass(opt.mouseover_class);
+                          $(self).fadeIn("fast");
+
+                          if (opt.after_save != false) { opt.after_save(self); }
+
+                          $(self).removeClass(opt.mouseover_class);
+                        } 
                     });
-
-                    $(self).addClass(opt.mouseover_class);
-                    $(self).fadeIn("fast");
-
-                    if (opt.after_save != false) {
-                        opt.after_save(self);
-                    }
-
-                    $(self).removeClass(opt.mouseover_class);
-
-                },
-                // success
-                error: function(jqXHR, textStatus, errorThrown) {
-                    throw (textStatus + errorThrown + jqXHR.responseText);
-                }
-            });
-            // ajax
+            }
+            // if
         };
         // _saveEdit
-
     };
     // inplaceEdit
 })(jQuery);
